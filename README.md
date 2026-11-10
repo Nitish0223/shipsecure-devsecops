@@ -1,3 +1,7 @@
+# ShipSecure -- DevSecOps CI/CD for a 3-Tier MERN App
+
+> Built on the open-source [Wanderlust](https://github.com/krishnaacharyaa/wanderlust) MERN app (MIT) and the Wanderlust Mega Project guide. My changes: Terraform for a single hardened build server in us-east-1 (m7i-flex.large, Ubuntu 24.04, 30 GB gp3, admin ports restricted to my IP), and pipelines pointed at this repository.
+
 # Wanderlust - Your Ultimate Travel Blog 🌍✈️
 
 WanderLust is a simple MERN travel blog website ✈ This project is aimed to help people to contribute in open source, upskill in react and also master git.
