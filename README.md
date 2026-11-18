@@ -1,6 +1,47 @@
 # ShipSecure -- DevSecOps CI/CD for a 3-Tier MERN App
 
-> Built on the open-source [Wanderlust](https://github.com/krishnaacharyaa/wanderlust) MERN app (MIT) and the Wanderlust Mega Project guide. My changes: Terraform for a single hardened build server in us-east-1 (m7i-flex.large, Ubuntu 24.04, 30 GB gp3, admin ports restricted to my IP), and pipelines pointed at this repository.
+A DevSecOps pipeline that scans every release for security problems before it is built and deployed. Jenkins runs Trivy, OWASP Dependency-Check and SonarQube; only code that passes is packaged into Docker images, and Argo CD deploys those images to Kubernetes from Git.
+
+## Credits and what I did
+
+This project is based on open-source work:
+
+- **Application:** [Wanderlust](https://github.com/krishnaacharyaa/wanderlust), a MERN travel blog (MIT licence). I did not write the app code.
+- **Pipeline design:** the Wanderlust Mega Project DevSecOps guide by DevMadhup / TrainWithShubham. The setup guide further down this page comes from it.
+
+My work:
+
+- Set up and ran the full toolchain myself: Jenkins master and agent, the shared library, SonarQube, Trivy, OWASP Dependency-Check, Argo CD and email notifications.
+- Wrote the Terraform (`terraform/`) for a hardened build server: m7i-flex.large, Ubuntu 24.04, 30 GB gp3. A security group built with a `dynamic` block limits SSH, Jenkins, SonarQube, Redis and the Kubernetes API to my own IP, which is looked up automatically with an `http` data source.
+- Pointed the CI and CD pipelines at this repository.
+
+## How it works
+
+```
+git push
+  -> Jenkins CI (runs on the agent)
+       checkout -> Trivy fs scan -> OWASP Dependency-Check -> SonarQube analysis -> Quality Gate
+       -> build backend + frontend images -> push to Docker Hub
+  -> Jenkins CD (triggered with the image tags)
+       update image tags in kubernetes/*.yaml -> commit and push to GitHub -> email report
+  -> Argo CD sees the change in Git and deploys the new images to the cluster
+```
+
+| Tool | Checks | Type |
+|---|---|---|
+| Trivy (filesystem) | Known CVEs in dependency files, leaked secrets, misconfigurations | Vulnerability scanner |
+| OWASP Dependency-Check | Third-party libraries with known vulnerabilities | SCA |
+| SonarQube + Quality Gate | Bugs, vulnerabilities and code smells in the project's own code | SAST |
+
+## Known limitations and next steps
+
+- The frontend image runs the Vite dev server; production should serve a static build from Nginx.
+- MongoDB uses a `hostPath` volume and a Deployment; it should be a StatefulSet with EBS-backed volumes. Redis should not share MongoDB's volume claim.
+- Services are exposed as NodePorts; an Ingress with TLS is the better option.
+- Images use manually entered tags and are pushed to the guide's Docker Hub namespace; next steps are Git-SHA tags, my own registry and a Trivy image scan.
+- `.env` files are baked into the images; they should come from Kubernetes ConfigMaps and Secrets.
+
+---
 
 # Wanderlust - Your Ultimate Travel Blog 🌍✈️
 
